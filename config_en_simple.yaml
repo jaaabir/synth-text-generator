@@ -1,0 +1,120 @@
+quality: [60, 92]
+landscape: 0.5
+short_size: [360, 512]
+aspect_ratio: [1, 1.6]
+max_rotation: 2
+
+background:
+  image:
+    paths: [resources/background]
+    weights: [1]
+
+  effect:
+    args:
+      - prob: 1
+        args:
+          sigma: [0, 4]   # mild gaussian blur (was up to 10)
+
+document:
+  fullscreen: 0.5
+  landscape: 0.5
+  short_size: [360, 512]
+  aspect_ratio: [1, 1.6]
+
+  paper:
+    image:
+      paths: [resources/paper]
+      weights: [1]
+      alpha: [0, 0.15]
+      grayscale: 1
+      crop: 1
+
+  content:
+    margin: [0, 0.06]          # keep some margin room
+    text:
+      path: resources/corpus/enwiki.txt
+    font:
+      paths: [resources/font/en]
+      weights: [1]
+      bold: 0
+    layout:
+      text_scale: [0.0334, 0.08]
+      lines_range: [1, 3]      # our template honors this
+      max_row: 3               # force small paragraphs
+      max_col: 3
+      fill: [0.5, 1]
+      full: 0.1
+      align: [left, right, center]
+      stack_spacing: [0.0334, 0.0334]
+      stack_fill: [0.5, 1]
+      stack_full: 0.1
+    textbox:
+      fill: [0.5, 1]
+    textbox_color:
+      prob: 0.15
+      args:
+        gray: [0, 64]
+        colorize: 1
+    content_color:
+      prob: 0.15
+      args:
+        gray: [0, 64]
+        colorize: 1
+
+  effect:
+    args:
+      # elastic distortion - keep mild
+      - prob: 0.6
+        args:
+          alpha: [0, 0.6]
+          sigma: [0, 0.25]
+      # gaussian noise - mild
+      - prob: 0.6
+        args:
+          scale: [0, 5]
+          per_channel: 0
+      # perspective - much smaller and less extreme than original
+      - prob: 0.25
+        args:
+          weights: [120, 15, 15, 10, 10, 10, 10, 15]
+          args:
+            - percents: [[0.92, 1], [0.92, 1], [0.92, 1], [0.92, 1]]
+            - percents: [[0.92, 1], [1, 1], [0.92, 1], [1, 1]]
+            - percents: [[1, 1], [0.92, 1], [1, 1], [0.92, 1]]
+            - percents: [[0.92, 1], [1, 1], [1, 1], [1, 1]]
+            - percents: [[1, 1], [0.92, 1], [1, 1], [1, 1]]
+            - percents: [[1, 1], [1, 1], [0.92, 1], [1, 1]]
+            - percents: [[1, 1], [1, 1], [1, 1], [0.92, 1]]
+            - percents: [[1, 1], [1, 1], [1, 1], [1, 1]]
+
+effect:
+  args:
+    # color jitter - mild
+    - prob: 0.15
+      args:
+        rgb: [[0, 255], [0, 255], [0, 255]]
+        alpha: [0, 0.08]   # reduced alpha so it doesn't wash/blend too much
+    # shadow - reduce intensity so shadows are subtle
+    - prob: 0.9
+      args:
+        intensity: [0, 80]
+        amount: [0, 0.8]
+        smoothing: [0.6, 1]
+        bidirectional: 0
+    # contrast
+    - prob: 1
+      args:
+        alpha: [1, 1.25]
+    # brightness
+    - prob: 1
+      args:
+        beta: [-24, 0]
+    # motion blur - low prob, small kernel
+    - prob: 0.2
+      args:
+        k: [3, 3]
+        angle: [0, 360]
+    # gaussian blur - mild
+    - prob: 0.6
+      args:
+        sigma: [0, 0.9]

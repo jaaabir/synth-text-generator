@@ -1,0 +1,9 @@
+outputs/
+outputs_ol/
+__pycache__/
+
+
+*.jpg
+*.png
+*.json
+*jsonl
