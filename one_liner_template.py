@@ -31,11 +31,9 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from synthtiger import templates
 # elements.Background / Document are not required here (we do lightweight PIL composition),
 # but importing Background would be fine if you prefer to use synthtiger Background.
-try:
-    from elements import Background
-    HAVE_BACKGROUND = True
-except Exception:
-    HAVE_BACKGROUND = False
+
+HAVE_BACKGROUND = True
+
 
 
 def _list_files(dirpaths, exts=None):
@@ -110,7 +108,7 @@ class SynthGenerator(templates.Template):
         # train/val/test split
         self.splits = ["train", "validation", "test"]
         self.split_ratio = split_ratio if split_ratio else [0.9, 0.05, 0.05]
-        self.split_indexes = np.random.choice(3, size=10000, p=self.split_ratio)
+        self.split_indexes = np.random.choice(3, size=50000, p=self.split_ratio)
 
         # COLOR PALETTE: only allowed colors (no gray, no light colors)
         # black, blue, green, red, dark yellow, maroon
@@ -207,7 +205,8 @@ class SynthGenerator(templates.Template):
             try:
                 paper = Image.open(ppath).convert("RGBA")
                 paper = ImageOps.fit(paper, (W, H), Image.LANCZOS)
-            except Exception:
+                
+            except Exception as e:
                 paper = Image.new("RGBA", (W, H), (255, 255, 255, 255))
         else:
             paper = Image.new("RGBA", (W, H), (255, 255, 255, 255))
@@ -216,10 +215,14 @@ class SynthGenerator(templates.Template):
         bg_files = self._gather_backgrounds()
         if bg_files:
             bpath = random.choice(bg_files)
+            # print(bpath)
             try:
                 bg = Image.open(bpath).convert("RGBA")
                 bg = ImageOps.fit(bg, (W, H), Image.LANCZOS)
-            except Exception:
+                # print('Got the background')
+            except Exception as e:
+                print(e)
+                print('generating a blank bg')
                 bg = Image.new("RGBA", (W, H), (255, 255, 255, 255))
             canvas = bg.copy()
             canvas.paste(paper, (0, 0), paper)

@@ -1,31 +1,35 @@
 """
-Donut
-Copyright (c) 2022-present NAVER Corp.
-MIT License
+Custom SynthDoG-style Generator
 """
+
 import json
 import os
 import re
+import numpy as np
 from typing import Any, List
 
-import numpy as np
 from elements import Background, Document
 from PIL import Image
 from synthtiger import components, layers, templates
 
 
-class SynthDoG(templates.Template):
+class SynthGenerator(templates.Template):
     def __init__(self, config=None, split_ratio: List[float] = []):
         super().__init__(config)
         if config is None:
             config = {}
 
-        self.quality = config.get("quality", [50, 95])
+        # config
+        self.quality = config.get("quality", [70, 95])
         self.landscape = config.get("landscape", 0.5)
-        self.short_size = config.get("short_size", [720, 1024])
-        self.aspect_ratio = config.get("aspect_ratio", [1, 2])
+        self.short_size = config.get("short_size", [224, 350])  # 👈 clamp here
+        self.aspect_ratio = config.get("aspect_ratio", [1.0, 1.5])
+
+        # background and document modules
         self.background = Background(config.get("background", {}))
         self.document = Document(config.get("document", {}))
+
+        # visual effects
         self.effect = components.Iterator(
             [
                 components.Switch(components.RGB()),
@@ -38,21 +42,24 @@ class SynthDoG(templates.Template):
             **config.get("effect", {}),
         )
 
-        # config for splits
+        # dataset splits
         self.splits = ["train", "validation", "test"]
-        self.split_ratio = split_ratio if split_ratio else [0.8, 0.1, 0.1]
+        self.split_ratio = split_ratio if split_ratio else [0.9, 0.05, 0.05]
         self.split_indexes = np.random.choice(3, size=10000, p=self.split_ratio)
 
     def generate(self):
+        # choose orientation + aspect
         landscape = np.random.rand() < self.landscape
         short_size = np.random.randint(self.short_size[0], self.short_size[1] + 1)
         aspect_ratio = np.random.uniform(self.aspect_ratio[0], self.aspect_ratio[1])
         long_size = int(short_size * aspect_ratio)
         size = (long_size, short_size) if landscape else (short_size, long_size)
 
+        # background and text layers
         bg_layer = self.background.generate(size)
         paper_layer, text_layers, texts = self.document.generate(size)
 
+        # group text + paper, then overlay onto background
         document_group = layers.Group([*text_layers, paper_layer])
         document_space = np.clip(size - document_group.size, 0, None)
         document_group.left = np.random.randint(document_space[0] + 1)
@@ -62,25 +69,21 @@ class SynthDoG(templates.Template):
         layer = layers.Group([*document_group.layers, bg_layer]).merge()
         self.effect.apply([layer])
 
+        # final render
         image = layer.output(bbox=[0, 0, *size])
-        label = " ".join(texts)
-        label = label.strip()
-        label = re.sub(r"\s+", " ", label)
+        label = " ".join(texts).strip()
+        label = re.sub(r"\s+", " ", label)  # normalize whitespace
         quality = np.random.randint(self.quality[0], self.quality[1] + 1)
 
-        print(texts)
-        data = {
+        return {
             "image": image,
             "label": label,
             "quality": quality,
             "roi": roi,
         }
 
-        return data
-
     def init_save(self, root):
-        if not os.path.exists(root):
-            os.makedirs(root, exist_ok=True)
+        os.makedirs(root, exist_ok=True)
 
     def save(self, root, data, idx):
         image = data["image"]
@@ -88,7 +91,7 @@ class SynthDoG(templates.Template):
         quality = data["quality"]
         roi = data["roi"]
 
-        # split
+        # split handling
         split_idx = self.split_indexes[idx % len(self.split_indexes)]
         output_dirpath = os.path.join(root, self.splits[split_idx])
 
@@ -96,16 +99,19 @@ class SynthDoG(templates.Template):
         image_filename = f"image_{idx}.jpg"
         image_filepath = os.path.join(output_dirpath, image_filename)
         os.makedirs(os.path.dirname(image_filepath), exist_ok=True)
-        image = Image.fromarray(image[..., :3].astype(np.uint8))
-        image.save(image_filepath, quality=quality)
+        Image.fromarray(image[..., :3].astype(np.uint8)).save(image_filepath, quality=quality)
 
-        # save metadata (gt_json)
+        # save metadata
         metadata_filename = "metadata.jsonl"
         metadata_filepath = os.path.join(output_dirpath, metadata_filename)
         os.makedirs(os.path.dirname(metadata_filepath), exist_ok=True)
 
-        metadata = self.format_metadata(image_filename=image_filename, keys=["text_sequence"], values=[label])
-        with open(metadata_filepath, "a", encoding='utf-8') as fp:
+        metadata = self.format_metadata(
+            image_filename=image_filename,
+            keys=["text_sequence"],
+            values=[label]
+        )
+        with open(metadata_filepath, "a", encoding="utf-8") as fp:
             json.dump(metadata, fp, ensure_ascii=False)
             fp.write("\n")
 
@@ -113,19 +119,7 @@ class SynthDoG(templates.Template):
         pass
 
     def format_metadata(self, image_filename: str, keys: List[str], values: List[Any]):
-        """
-        Fit gt_parse contents to huggingface dataset's format
-        keys and values, whose lengths are equal, are used to constrcut 'gt_parse' field in 'ground_truth' field
-        Args:
-            keys: List of task_name
-            values: List of actual gt data corresponding to each task_name
-        """
-        assert len(keys) == len(values), "Length does not match: keys({}), values({})".format(len(keys), len(values))
-
-        _gt_parse_v = dict()
-        for k, v in zip(keys, values):
-            _gt_parse_v[k] = v
-        gt_parse = {"gt_parse": _gt_parse_v}
+        assert len(keys) == len(values)
+        gt_parse = {"gt_parse": dict(zip(keys, values))}
         gt_parse_str = json.dumps(gt_parse, ensure_ascii=False)
-        metadata = {"file_name": image_filename, "ground_truth": gt_parse_str}
-        return metadata
+        return {"file_name": image_filename, "ground_truth": gt_parse_str}

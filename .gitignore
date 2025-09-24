@@ -1,9 +1,5 @@
 outputs/
 outputs_ol/
 __pycache__/
+testing/
 
-
-*.jpg
-*.png
-*.json
-*jsonl

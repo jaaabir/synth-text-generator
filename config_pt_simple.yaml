@@ -1,8 +1,7 @@
-quality: [60, 92]
+quality: [95, 100]
 landscape: 0.5
-short_size: [720, 1024]
-aspect_ratio: [1, 1.6]
-max_rotation: 4
+short_size: [360, 512]
+aspect_ratio: [1, 1.2]
 
 background:
   image:
@@ -11,37 +10,37 @@ background:
 
   effect:
     args:
+      # gaussian blur
       - prob: 1
         args:
-          sigma: [0, 4]   # mild gaussian blur (was up to 10)
+          sigma: [0, 10]
 
 document:
-  fullscreen: 0.5
+  fullscreen: 0.8
   landscape: 0.5
-  short_size: [480, 1024]
-  aspect_ratio: [1, 1.6]
+  short_size: [360, 512]
+  aspect_ratio: [1, 1.2]
 
   paper:
     image:
       paths: [resources/paper]
       weights: [1]
-      alpha: [0, 0.15]
+      alpha: [0, 0.2]
       grayscale: 1
       crop: 1
 
   content:
-    margin: [0, 0.06]          # keep some margin room
+    margin: [0, 0.1]
     text:
-      path: resources/corpus/ptwiki.txt
+      path: resources/corpus/ptwiki2.txt
     font:
       paths: [resources/font/en]
       weights: [1]
       bold: 0
     layout:
-      text_scale: [0.0334, 0.08]
-      lines_range: [1, 3]      # our template honors this
-      max_row: 3               # force small paragraphs
-      max_col: 3
+      text_scale: [0.09, 0.2]
+      max_row: 10
+      max_col: 1
       fill: [0.5, 1]
       full: 0.1
       align: [left, right, center]
@@ -51,70 +50,70 @@ document:
     textbox:
       fill: [0.5, 1]
     textbox_color:
-      prob: 0.15
+      prob: 0.2
       args:
         gray: [0, 64]
         colorize: 1
     content_color:
-      prob: 0.15
+      prob: 0.2
       args:
         gray: [0, 64]
         colorize: 1
 
   effect:
     args:
-      # elastic distortion - keep mild
-      - prob: 0.6
+      # elastic distortion
+      - prob: 0.05
         args:
-          alpha: [0, 0.6]
-          sigma: [0, 0.25]
-      # gaussian noise - mild
-      - prob: 0.6
+          alpha: [0, 1]
+          sigma: [0, 0.5]
+      # # gaussian noise
+      - prob: 0
         args:
-          scale: [0, 5]
+          scale: [0, 1]
           per_channel: 0
-      # perspective - much smaller and less extreme than original
-      - prob: 0.25
+      # perspective
+      - prob: 0.05
         args:
-          weights: [120, 15, 15, 10, 10, 10, 10, 15]
+          weights: [750, 50, 50, 25, 25, 25, 25, 50]
           args:
-            - percents: [[0.92, 1], [0.92, 1], [0.92, 1], [0.92, 1]]
-            - percents: [[0.92, 1], [1, 1], [0.92, 1], [1, 1]]
-            - percents: [[1, 1], [0.92, 1], [1, 1], [0.92, 1]]
-            - percents: [[0.92, 1], [1, 1], [1, 1], [1, 1]]
-            - percents: [[1, 1], [0.92, 1], [1, 1], [1, 1]]
-            - percents: [[1, 1], [1, 1], [0.92, 1], [1, 1]]
-            - percents: [[1, 1], [1, 1], [1, 1], [0.92, 1]]
+            - percents: [[0.75, 1], [0.75, 1], [0.75, 1], [0.75, 1]]
+            - percents: [[0.75, 1], [1, 1], [0.75, 1], [1, 1]]
+            - percents: [[1, 1], [0.75, 1], [1, 1], [0.75, 1]]
+            - percents: [[0.75, 1], [1, 1], [1, 1], [1, 1]]
+            - percents: [[1, 1], [0.75, 1], [1, 1], [1, 1]]
+            - percents: [[1, 1], [1, 1], [0.75, 1], [1, 1]]
+            - percents: [[1, 1], [1, 1], [1, 1], [0.75, 1]]
             - percents: [[1, 1], [1, 1], [1, 1], [1, 1]]
 
 effect:
   args:
-    # color jitter - mild
-    - prob: 0.15
-      args:
-        rgb: [[0, 255], [0, 255], [0, 255]]
-        alpha: [0, 0.08]   # reduced alpha so it doesn't wash/blend too much
-    # shadow - reduce intensity so shadows are subtle
-    - prob: 0.9
-      args:
-        intensity: [0, 80]
-        amount: [0, 0.8]
-        smoothing: [0.6, 1]
-        bidirectional: 0
-    # contrast
-    - prob: 1
-      args:
-        alpha: [1, 1.25]
-    # brightness
-    - prob: 1
-      args:
-        beta: [-24, 0]
-    # motion blur - low prob, small kernel
+    # color
     - prob: 0.2
       args:
-        k: [3, 3]
-        angle: [0, 360]
-    # gaussian blur - mild
-    - prob: 0.6
+        rgb: [[0, 255], [0, 255], [0, 255]]
+        alpha: [0, 0.2]
+    # shadow
+    - prob: 0
       args:
-        sigma: [0, 0.9]
+        intensity: [0, 160]
+        amount: [0, 1]
+        smoothing: [0.5, 1]
+        bidirectional: 0
+    # contrast
+    - prob: 0
+      args:
+        alpha: [1, 1.5]
+    # brightness
+    - prob: 0
+      args:
+        beta: [-48, 0]
+    # motion blur
+    - prob: 0.5
+      args:
+        k: [3, 5]
+        angle: [0, 360]
+    # gaussian blur
+    - prob: 1
+      args:
+        sigma: [0, 1.5]
